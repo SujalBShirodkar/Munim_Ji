@@ -36,8 +36,8 @@ async def get_morning_briefing(user: dict = Depends(get_current_user_payload)):
     credit = await mock_nbfc.get_eligibility_offer(merchant_id)
 
     spoken = (
-        f"Namaste Sharma ji! Kal Paytm par ₹{yest['total_sales_rupees']:,.0f} ki bikri hui. "
-        f"Cheeni ke group order me 9 dukaane jud chuki hain, jisme ₹45 per bag bachat ka mauka hai."
+        f"Namaste Sharma ji! Kal Paytm par {yest['total_sales_rupees']:,.0f} rupaye ki bikri hui. "
+        f"Cheeni ke group order me 9 dukaane jud chuki hain, jisme 45 rupaye per bag bachat ka mauka hai."
     )
 
     bullets = [

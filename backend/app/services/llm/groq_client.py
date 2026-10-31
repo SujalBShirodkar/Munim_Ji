@@ -20,59 +20,101 @@ def get_groq_client() -> Optional[AsyncGroq]:
 
 async def run_deterministic_fallback(user_query: str, merchant_id: str) -> Dict[str, Any]:
     """Graceful deterministic fallback when Groq API key is not present or offline."""
-    q = user_query.lower()
-    
-    # Question 1: Sales / Yesterday
-    if any(k in q for k in ["kal ki bikri", "yesterday", "kal ke sales", "bikri"]):
+    q = user_query.lower().strip()
+
+    # Prefer more specific intents first (STT often returns partial Hindi phrases)
+    is_yesterday = any(
+        k in q
+        for k in [
+            "kal ki bikri",
+            "kal ke",
+            "yesterday",
+            "kal sales",
+            "kal ki sale",
+            "kal kitni",
+        ]
+    ) or (("kal" in q) and any(k in q for k in ["bikri", "sale", "sales", "kitni", "transaction"]))
+
+    is_today = (not is_yesterday) and any(
+        k in q for k in ["aaj ki bikri", "aaj ke", "today", "aaj kitni", "aaj sales"]
+    )
+
+    is_price = any(
+        k in q
+        for k in [
+            "chai",
+            "mehngi",
+            "price",
+            "badha",
+            "badhaun",
+            "whatif",
+            "what if",
+            "daam",
+            "₹2",
+            "2 rup",
+        ]
+    )
+
+    is_pool = any(
+        k in q
+        for k in ["cheeni", "sugar", "group", "pool", "wholesale", "bachat", "order"]
+    ) and not is_price
+
+    is_credit = any(
+        k in q
+        for k in ["credit", "udhaar", "loan", "5000", "5,000", "advance", "paise chahiye", "chahiye"]
+    )
+
+    if is_yesterday or (("bikri" in q or "sale" in q) and "aaj" not in q and not is_price and not is_pool and not is_credit):
         summary = await execute_tool("get_sales_summary", {"period": "yesterday"}, merchant_id)
         amt = summary.get("total_sales_rupees", 8400.0)
         cnt = summary.get("transaction_count", 34)
         return {
-            "spoken_text": f"Kal ke Paytm transactions ₹{amt:,.0f} the, jisme kul {cnt} bikriyan hui thi.",
+            "spoken_text": f"Kal ke Paytm transactions {amt:,.0f} rupaye the, jisme kul {cnt} bikriyan hui thi.",
             "display_text": f"Kal ki kul bikri: ₹{amt:,.2f} ({cnt} transactions). Sabse zyada bikri shaam 6:00 - 7:00 baje hui.",
-            "ui_actions": [{"type": "show_card", "target": "sales_summary", "payload": summary}]
+            "ui_actions": [{"type": "show_card", "target": "sales_summary", "payload": summary}],
         }
 
-    # Question 2: What-if price change on chai
-    elif any(k in q for k in ["chai", "mehngi", "price", "badha", "whatif", "₹2"]):
-        whatif = await execute_tool("run_whatif", {"scenario_type": "price_change", "product_name": "chai", "delta_rupees": 2.0}, merchant_id)
+    if is_price:
+        whatif = await execute_tool(
+            "run_whatif",
+            {"scenario_type": "price_change", "product_name": "chai", "delta_rupees": 2.0},
+            merchant_id,
+        )
         outcomes = whatif.get("outcomes", {})
         low_m = outcomes.get("conservative", {}).get("daily_gross_margin_rupees", 1050)
         high_m = outcomes.get("optimistic", {}).get("daily_gross_margin_rupees", 1360)
         return {
-            "spoken_text": f"Chai ₹2 badhane par aapka rozana munafa ₹{low_m:,.0f} se ₹{high_m:,.0f} ke beech rehne ka anuman hai.",
+            "spoken_text": f"Chai 2 rupaye badhane par aapka rozana munafa {low_m:,.0f} se {high_m:,.0f} rupaye ke beech rehne ka anuman hai.",
             "display_text": f"What-If Simulator (Chai +₹2): Rozana munafa ₹{low_m:,.0f} - ₹{high_m:,.0f}. Margin badhega, par lagbhag 5-8% grahak kam ho sakte hain.",
-            "ui_actions": [{"type": "open_screen", "target": "simulator", "payload": whatif}]
+            "ui_actions": [{"type": "open_screen", "target": "simulator", "payload": whatif}],
         }
 
-    # Question 3: Group order / Sugar
-    elif any(k in q for k in ["cheeni", "sugar", "group", "order", "pool", "bachao"]):
+    if is_pool:
         pools = await execute_tool("find_group_orders", {"product": "sugar"}, merchant_id)
         return {
-            "spoken_text": "12 dukaano ke saath cheeni ka group order khula hai, jisme ₹45 per bag bachat hogi.",
+            "spoken_text": "Cheeni ka group order khula hai. Nau dukane jud chuki hain, aur 45 rupaye per bag bachat hogi.",
             "display_text": "Cheeni Pooled Buy: 9/12 dukaane jud chuki hain (72/100 bags). Estimated Bachat: ₹45/bag.",
-            "ui_actions": [{"type": "open_screen", "target": "pool", "payload": pools}]
+            "ui_actions": [{"type": "open_screen", "target": "pool", "payload": pools}],
         }
 
-    # Question 4: Credit / Loan
-    elif any(k in q for k in ["credit", "udhaar", "loan", "5000", "5,000", "advance"]):
+    if is_credit:
         credit = await execute_tool("get_credit_status", {}, merchant_id)
         return {
-            "spoken_text": "Aapke liye ₹5,000 ka Instant Credit pre-approved hai, jo agle 3 dino me chukta ho jayega.",
+            "spoken_text": "Aapke liye 5000 rupaye ka Instant Credit pre-approved hai, jo agle 3 dino me chukta ho jayega.",
             "display_text": "Instant Credit Offer: ₹5,000 pre-approved limit. Repayment: 20% auto-deduction. Estimated settlement: ~3 din.",
-            "ui_actions": [{"type": "open_screen", "target": "credit", "payload": credit}]
+            "ui_actions": [{"type": "open_screen", "target": "credit", "payload": credit}],
         }
 
-    # General today's summary
-    else:
-        today_summary = await execute_tool("get_sales_summary", {"period": "today"}, merchant_id)
-        amt = today_summary.get("total_sales_rupees", 3240.0)
-        cnt = today_summary.get("transaction_count", 15)
-        return {
-            "spoken_text": f"Aaj ab tak Paytm par ₹{amt:,.0f} ki bikri hui hai.",
-            "display_text": f"Aaj ki bikri: ₹{amt:,.2f} ({cnt} transactions). Sab theek chal raha hai!",
-            "ui_actions": [{"type": "show_card", "target": "today_summary", "payload": today_summary}]
-        }
+    # Default / today
+    today_summary = await execute_tool("get_sales_summary", {"period": "today" if is_today or "aaj" in q else "today"}, merchant_id)
+    amt = today_summary.get("total_sales_rupees", 3240.0)
+    cnt = today_summary.get("transaction_count", 15)
+    return {
+        "spoken_text": f"Aaj ab tak Paytm par {amt:,.0f} rupaye ki bikri hui hai.",
+        "display_text": f"Aaj ki bikri: ₹{amt:,.2f} ({cnt} transactions). Sab theek chal raha hai!",
+        "ui_actions": [{"type": "show_card", "target": "today_summary", "payload": today_summary}],
+    }
 
 async def run_agent_loop(
     user_query: str,

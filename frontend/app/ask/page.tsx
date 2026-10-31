@@ -1,26 +1,31 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/lib/language-context';
 import {
+  canListen,
+  canSpeak,
+  speakText,
+  startListening,
+  stopSpeaking,
+  warmSpeech,
+  type ListenerHandle,
+} from '@/lib/speech';
+import {
   Send,
   Volume2,
   VolumeX,
-  Sparkles,
-  ArrowRight,
-  TrendingUp,
   LineChart,
   ShoppingBag,
   WalletCards,
-  RefreshCw,
-  Clock,
+  ArrowRight,
   Mic,
   MicOff,
-  ArrowLeft
+  ArrowLeft,
 } from 'lucide-react';
-import Link from 'next/link';
 
 interface Message {
   id: string;
@@ -28,348 +33,272 @@ interface Message {
   text: string;
   spokenText?: string;
   uiActions?: any[];
-  latencies?: any;
-  timestamp: Date;
 }
 
+const CHIPS = [
+  'Kal ki bikri kitni thi?',
+  'Chai ₹2 mehngi karu toh?',
+  'Cheeni ka group order?',
+  'Mujhe ₹5,000 chahiye',
+];
+
 export default function AskMunimPage() {
-  const { lang, t } = useLanguage();
+  const { lang } = useLanguage();
+  const speakLang = lang === 'en' ? 'en' : 'hi';
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       sender: 'munim',
-      text: 'Namaste Sharma ji! Main Munim Ji hoon. Kal ki bikri, chai ke daam badhane ka faisla, ya cheeni ke group order ke baare me poochhein.',
-      timestamp: new Date()
-    }
+      text: 'Namaste Sharma ji! Kal ki bikri, daam badhana, ya cheeni ka order — poochhein.',
+      spokenText:
+        'Namaste Sharma ji! Kal ki bikri, daam badhana, ya cheeni ka order — poochhein.',
+    },
   ]);
-  const [inputText, setInputText] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isThinking, setIsThinking] = useState(false);
-  const [activeTranscript, setActiveTranscript] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const suggestionChips = [
-    'Kal ki bikri kitni thi?',
-    'Agar main chai ₹2 mehngi kar du toh kya hoga?',
-    'Cheeni ke liye group order hai kya?',
-    'Mujhe ₹5,000 chahiye'
-  ];
+  const [input, setInput] = useState('');
+  const [listening, setListening] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [thinking, setThinking] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [micHint, setMicHint] = useState('');
+  const endRef = useRef<HTMLDivElement>(null);
+  const listenerRef = useRef<ListenerHandle | null>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isThinking, activeTranscript]);
-
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang === 'en' ? 'en-IN' : 'hi-IN';
-      utterance.rate = 1.0;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const stopSpeaking = () => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-  };
-
-  const handleSendMessage = async (textToSend: string) => {
-    const trimmed = textToSend.trim();
-    if (!trimmed) return;
-
-    stopSpeaking();
-
-    const userMsg: Message = {
-      id: `user-${Date.now()}`,
-      sender: 'user',
-      text: trimmed,
-      timestamp: new Date()
+    warmSpeech();
+    return () => {
+      listenerRef.current?.stop();
+      stopSpeaking();
     };
-    setMessages((prev) => [...prev, userMsg]);
-    setInputText('');
-    setActiveTranscript('');
-    setIsThinking(true);
+  }, []);
 
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, thinking, transcript]);
+
+  const speak = async (text: string) => {
+    if (!canSpeak() || !text.trim()) return;
+    await speakText(text, {
+      lang: speakLang,
+      onStart: () => setSpeaking(true),
+      onEnd: () => setSpeaking(false),
+      onError: () => setSpeaking(false),
+    });
+  };
+
+  const stopSpeak = () => {
+    stopSpeaking();
+    setSpeaking(false);
+  };
+
+  const send = async (raw: string) => {
+    const text = raw.trim();
+    if (!text || thinking) return;
+    listenerRef.current?.stop();
+    setListening(false);
+    stopSpeak();
+    setMessages((m) => [...m, { id: `u-${Date.now()}`, sender: 'user', text }]);
+    setInput('');
+    setTranscript('');
+    setMicHint('');
+    setThinking(true);
     try {
-      const response = await api.sendChatMessage(trimmed, lang);
-
-      const munimMsg: Message = {
-        id: `munim-${Date.now()}`,
-        sender: 'munim',
-        text: response.display_text || response.spoken_text,
-        spokenText: response.spoken_text,
-        uiActions: response.ui_actions || [],
-        latencies: response.latencies,
-        timestamp: new Date()
-      };
-      setMessages((prev) => [...prev, munimMsg]);
-
-      // Speak back
-      if (response.spoken_text) {
-        speakText(response.spoken_text);
-      }
-    } catch (err: any) {
-      const errMsg: Message = {
-        id: `err-${Date.now()}`,
-        sender: 'munim',
-        text: 'Maaf kijiye, abhi hum aapki darkhwast poori nahi kar paaye. Kripya dobara koshish karein.',
-        timestamp: new Date()
-      };
-      setMessages((prev) => [...prev, errMsg]);
+      const res = await api.sendChatMessage(text, lang);
+      const reply = res.display_text || res.spoken_text || '…';
+      const spoken = res.spoken_text || res.display_text;
+      setMessages((m) => [
+        ...m,
+        {
+          id: `m-${Date.now()}`,
+          sender: 'munim',
+          text: reply,
+          spokenText: spoken,
+          uiActions: res.ui_actions || [],
+        },
+      ]);
+      if (spoken) await speak(spoken);
+    } catch {
+      const err =
+        lang === 'en'
+          ? 'Sorry — please try again.'
+          : 'Maaf kijiye — phir se try karein.';
+      setMessages((m) => [...m, { id: `e-${Date.now()}`, sender: 'munim', text: err }]);
     } finally {
-      setIsThinking(false);
+      setThinking(false);
     }
   };
 
-  const toggleListening = () => {
-    if (isListening) {
-      setIsListening(false);
+  const toggleMic = () => {
+    if (listening) {
+      listenerRef.current?.stop();
+      listenerRef.current = null;
+      setListening(false);
       return;
     }
 
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please type your query below.');
+    if (!canListen()) {
+      setMicHint('Chrome ya Edge use karein for mic — ya type karein.');
       return;
     }
 
-    stopSpeaking();
-    const recognition = new SpeechRecognition();
-    recognition.lang = lang === 'en' ? 'en-IN' : 'hi-IN';
-    recognition.interimResults = true;
-    recognition.continuous = false;
+    setMicHint('');
+    setTranscript('Listening…');
+    listenerRef.current = startListening({
+      lang: speakLang,
+      onStart: () => setListening(true),
+      onPartial: (t) => setTranscript(t),
+      onFinal: (t) => {
+        setListening(false);
+        listenerRef.current = null;
+        setTranscript(t);
+        void send(t);
+      },
+      onError: (msg) => {
+        setMicHint(msg);
+        setListening(false);
+        setTranscript('');
+      },
+      onEnd: () => setListening(false),
+    });
+  };
 
-    recognition.onstart = () => {
-      setIsListening(true);
-      setActiveTranscript('Listening to shopkeeper...');
-    };
-
-    recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((r: any) => r[0].transcript)
-        .join('');
-      setActiveTranscript(transcript);
-
-      if (event.results[0].isFinal) {
-        setIsListening(false);
-        handleSendMessage(transcript);
-      }
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-      setActiveTranscript('');
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
+  const actionLink = (target: string) => {
+    if (target === 'simulator')
+      return { href: '/whatif', label: 'Open simulator', Icon: LineChart };
+    if (target === 'pool') return { href: '/pool', label: 'View pool', Icon: ShoppingBag };
+    if (target === 'credit')
+      return { href: '/credit', label: 'View credit', Icon: WalletCards };
+    return null;
   };
 
   return (
-    <AppShell hideNav={false}>
-      <div className="flex flex-col h-[calc(100vh-130px)] bg-[#F4F6F9] dark:bg-slate-900">
-        {/* Header */}
-        <div className="p-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+    <AppShell>
+      <div className="flex flex-col h-[calc(100vh-8.5rem)]">
+        <div className="px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Link href="/" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
+            <Link href="/" className="p-1 text-slate-400 hover:text-slate-700">
               <ArrowLeft size={18} />
             </Link>
             <div>
-              <h2 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Sparkles size={14} className="text-[#D97706]" />
-                Munim Ji Voice Assistant
-              </h2>
-              <p className="text-[10px] text-slate-400">Deterministic tools • Zero hallucinations</p>
+              <p className="text-sm font-bold text-slate-900">Ask Munim Ji</p>
+              <p className="text-[11px] text-slate-400">
+                {canListen() ? 'Mic + type' : 'Type only (mic needs Chrome/Edge)'}
+              </p>
             </div>
           </div>
-
-          {isSpeaking && (
+          {speaking && (
             <button
-              onClick={stopSpeaking}
-              className="text-[11px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-800 flex items-center gap-1"
+              onClick={stopSpeak}
+              className="text-[11px] font-bold px-2 py-1 rounded-lg bg-amber-100 text-amber-800 flex items-center gap-1"
             >
-              <VolumeX size={13} />
-              <span>Mute</span>
+              <VolumeX size={12} /> Mute
             </button>
           )}
         </div>
 
-        {/* Messages Stream */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3.5 no-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
           {messages.map((m) => (
             <div
               key={m.id}
-              className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
+              className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[88%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed shadow-xs ${
+                className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   m.sender === 'user'
-                    ? 'bg-[#002970] text-white rounded-tr-none'
-                    : 'bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-tl-none'
+                    ? 'bg-[var(--paytm-navy)] text-white rounded-br-md'
+                    : 'bg-white border border-slate-100 text-slate-800 rounded-bl-md shadow-sm'
                 }`}
               >
-                {/* Assistant Header */}
-                {m.sender === 'munim' && (
-                  <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-100 dark:border-slate-700 text-[11px] font-bold text-[#D97706]">
-                    <span className="flex items-center gap-1">
-                      <Sparkles size={12} />
-                      Munim Ji
-                    </span>
-                    {m.spokenText && (
-                      <button
-                        onClick={() => speakText(m.spokenText!)}
-                        className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400"
-                        title="Replay Voice"
-                      >
-                        <Volume2 size={13} />
-                      </button>
-                    )}
-                  </div>
+                {m.sender === 'munim' && m.spokenText && canSpeak() && (
+                  <button
+                    onClick={() => void speak(m.spokenText!)}
+                    className="mb-1 text-slate-400 hover:text-[var(--turmeric)]"
+                    aria-label="Replay"
+                  >
+                    <Volume2 size={13} />
+                  </button>
                 )}
-
-                <p className="whitespace-pre-line text-xs sm:text-[13px] leading-relaxed">{m.text}</p>
-
-                {/* Inline Action Card Button if tool suggested UI transition */}
-                {m.uiActions && m.uiActions.length > 0 && (
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700 flex flex-wrap gap-2">
-                    {m.uiActions.map((action, i) => {
-                      if (action.target === 'simulator') {
-                        return (
-                          <Link
-                            key={i}
-                            href="/whatif"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#002970] text-white text-xs font-bold shadow-xs hover:bg-[#001d52]"
-                          >
-                            <LineChart size={13} />
-                            <span>Open Price Simulator</span>
-                            <ArrowRight size={12} />
-                          </Link>
-                        );
-                      }
-                      if (action.target === 'pool') {
-                        return (
-                          <Link
-                            key={i}
-                            href="/pool"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold shadow-xs hover:bg-amber-700"
-                          >
-                            <ShoppingBag size={13} />
-                            <span>View Sugar Pool Order</span>
-                            <ArrowRight size={12} />
-                          </Link>
-                        );
-                      }
-                      if (action.target === 'credit') {
-                        return (
-                          <Link
-                            key={i}
-                            href="/credit"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-xs hover:bg-emerald-700"
-                          >
-                            <WalletCards size={13} />
-                            <span>Review ₹5,000 Credit Offer</span>
-                            <ArrowRight size={12} />
-                          </Link>
-                        );
-                      }
-                      return null;
+                <p className="whitespace-pre-line">{m.text}</p>
+                {m.uiActions?.length ? (
+                  <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                    {m.uiActions.map((a: any, i: number) => {
+                      const link = actionLink(a.target);
+                      if (!link) return null;
+                      const { href, label, Icon } = link;
+                      return (
+                        <Link
+                          key={i}
+                          href={href}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--paytm-navy)] text-white text-xs font-bold"
+                        >
+                          <Icon size={12} />
+                          {label}
+                          <ArrowRight size={11} />
+                        </Link>
+                      );
                     })}
                   </div>
-                )}
-
-                {/* Latency info badge */}
-                {m.latencies && (
-                  <div className="mt-2 pt-1 text-[9px] text-slate-400 flex items-center justify-between font-mono">
-                    <span>Tool latency: {m.latencies.llm}ms</span>
-                    <span>Total response: {m.latencies.total}ms</span>
-                  </div>
-                )}
+                ) : null}
               </div>
             </div>
           ))}
 
-          {/* Thinking State */}
-          {isThinking && (
-            <div className="flex items-center gap-2 p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 w-fit shadow-xs">
-              <RefreshCw size={14} className="animate-spin text-[#002970] dark:text-[#00BAF2]" />
-              <span>Munim Ji calculating database numbers...</span>
+          {thinking && (
+            <div className="text-xs text-slate-500 px-1">Munim Ji soch rahe hain…</div>
+          )}
+          {transcript && listening && (
+            <div className="text-xs italic text-amber-800 bg-amber-50 rounded-xl px-3 py-2 border border-amber-100">
+              “{transcript}”
             </div>
           )}
-
-          {activeTranscript && (
-            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 text-xs text-amber-900 dark:text-amber-200 italic font-medium">
-              "{activeTranscript}"
-            </div>
+          {micHint && (
+            <div className="text-xs text-red-700 bg-red-50 rounded-xl px-3 py-2">{micHint}</div>
           )}
-
-          <div ref={messagesEndRef} />
+          <div ref={endRef} />
         </div>
 
-        {/* Suggestion Chips */}
-        <div className="px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar bg-slate-100 dark:bg-slate-800/50">
-          {suggestionChips.map((chip, idx) => (
+        <div className="px-3 py-2 flex gap-2 overflow-x-auto no-scrollbar">
+          {CHIPS.map((c) => (
             <button
-              key={idx}
-              onClick={() => handleSendMessage(chip)}
-              className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-[#00BAF2] whitespace-nowrap shadow-2xs transition"
+              key={c}
+              onClick={() => void send(c)}
+              className="shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700"
             >
-              {chip}
+              {c}
             </button>
           ))}
         </div>
 
-        {/* Bottom Input & Mic */}
-        <div className="p-3 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSendMessage(inputText);
-            }}
-            className="flex items-center gap-2"
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void send(input);
+          }}
+          className="p-3 bg-white border-t border-slate-100 flex items-center gap-2"
+        >
+          <button
+            type="button"
+            onClick={toggleMic}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${
+              listening ? 'bg-red-500 animate-pulse' : 'bg-amber-500'
+            }`}
+            title={listening ? 'Stop mic' : 'Speak'}
           >
-            {/* Mic Button */}
-            <button
-              type="button"
-              onClick={toggleListening}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition shadow-xs ${
-                isListening
-                  ? 'bg-red-500 text-white animate-pulse'
-                  : 'bg-amber-500 hover:bg-amber-600 text-white'
-              }`}
-              title={isListening ? 'Stop listening' : 'Start voice query'}
-            >
-              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
-            </button>
-
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder={isListening ? 'Listening...' : 'Poochhein ya type karein (e.g. Kal ki bikri)...'}
-              className="flex-1 py-2.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#002970]"
-            />
-
-            <button
-              type="submit"
-              disabled={!inputText.trim() || isThinking}
-              className="w-10 h-10 rounded-xl bg-[#002970] text-white flex items-center justify-center disabled:opacity-40 shadow-xs hover:bg-[#001d52]"
-            >
-              <Send size={16} />
-            </button>
-          </form>
-        </div>
+            {listening ? <MicOff size={18} /> : <Mic size={18} />}
+          </button>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Poochhein ya type karein…"
+            className="flex-1 py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:border-[var(--paytm-navy)]"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || thinking}
+            className="w-10 h-10 rounded-xl bg-[var(--paytm-navy)] text-white flex items-center justify-center disabled:opacity-40"
+          >
+            <Send size={16} />
+          </button>
+        </form>
       </div>
     </AppShell>
   );
