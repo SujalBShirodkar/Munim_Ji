@@ -26,6 +26,17 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 
 export const api = {
   // Auth
+  login: (phone: string, password: string) =>
+    fetchApi<any>('/auth/login', { method: 'POST', body: JSON.stringify({ phone, password }) }),
+  register: (data: {
+    name: string;
+    shop_name: string;
+    phone: string;
+    password: string;
+    category?: string;
+    pincode?: string;
+    language?: string;
+  }) => fetchApi<any>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   requestOtp: (phone: string) => fetchApi<any>('/auth/otp/request', { method: 'POST', body: JSON.stringify({ phone }) }),
   verifyOtp: (phone: string, otp: string) => fetchApi<any>('/auth/otp/verify', { method: 'POST', body: JSON.stringify({ phone, otp }) }),
   getMe: () => fetchApi<any>('/auth/me'),
@@ -85,4 +96,3 @@ export const api = {
   // Admin
   getAdminMetrics: () => fetchApi<any>('/admin/metrics'),
 };
-

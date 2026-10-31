@@ -156,3 +156,11 @@ Append new entries at the bottom as the build progresses.
   3. **Net to Bank** (₹80.00 settling next morning at 7:00 AM)
 - **Soundbox Telemetry:** Integrated "Soundbox 4G Active • 94% Battery" status pill and an interactive audio replay trigger simulating the iconic voice box ("Paytm par ₹100 prapt hue").
 - **Quality Gates:** All 13 Next.js routes compile cleanly in production build (`npm run build`), and all backend pytest tests pass (Paytm checksums, OR-Tools optimization, state machines, repayment math).
+
+
+### 2026-10-31 · Dynamic Merchant Registration & Password Authentication (MongoDB Atlas Persistent)
+- **Decision:** Implemented dynamic registration (`name`, `shop_name`, `phone`, `password`, `category`) and password-based login stored persistently in MongoDB Atlas.
+- **Security:** Salted SHA-256 password hashing with timing-attack resistant verification (`secrets.compare_digest`). Passwords and salts are never returned in `/auth/me` or serialized payloads.
+- **Auto-Provisioning:** When a new merchant registers, the system automatically provisions their starter catalogue (sugar, tea, oil, atta) and an Instant Credit line (₹5,000 pre-approved limit).
+- **Dynamic Context:** Top header and Morning Voice Briefing automatically address the logged-in merchant by their real shop name and owner name.
+- **Legacy Compatibility:** Preserves demo account (`+919876543210` / `demo123` / OTP `123456`) so demo walkthroughs and automated tests remain 100% reliable.
