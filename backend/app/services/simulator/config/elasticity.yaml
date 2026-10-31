@@ -1,0 +1,27 @@
+categories:
+  Beverages:
+    low: -0.8
+    base: -0.5
+    high: -0.3
+    description: "Daily tea/coffee has moderate inelasticity due to habit, but rapid price increases can cause drop-off to adjacent stalls."
+  Staples:
+    low: -0.5
+    base: -0.35
+    high: -0.2
+    description: "Essential food staples (sugar, flour, rice) have low price sensitivity within neighborhood radius."
+  Snacks:
+    low: -0.9
+    base: -0.6
+    high: -0.4
+    description: "Impulse snack purchases have moderate elasticity."
+  Dairy:
+    low: -0.3
+    base: -0.2
+    high: -0.1
+    description: "Packaged milk has very low elasticity due to daily household necessity."
+  Edible Oil:
+    low: -0.6
+    base: -0.4
+    high: -0.25
+    description: "Bulk oil purchases have sensitivity tied to wholesale market shifts."
+

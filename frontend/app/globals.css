@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-paper: #F6F8FC;
+    --card-paper: #FFFFFF;
+    --text-primary: #0B1F4B;
+    --border-ledger: #E2E8F0;
+    --margin-red: #F25C54;
+  }
+
+  .dark {
+    --bg-paper: #0B132B;
+    --card-paper: #1C2541;
+    --text-primary: #F8FAFC;
+    --border-ledger: #2D3748;
+    --margin-red: #E53E3E;
+  }
+
+  body {
+    background-color: var(--bg-paper);
+    color: var(--text-primary);
+    font-feature-settings: "tnum" on, "lnum" on;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Digital Khata signature ledger-lines */
+.khata-card {
+  position: relative;
+  background-color: var(--card-paper);
+  background-image: linear-gradient(to bottom, transparent 96%, var(--border-ledger) 96%);
+  background-size: 100% 28px;
+}
+
+.khata-margin {
+  border-left: 2px solid rgba(242, 92, 84, 0.4);
+  padding-left: 12px;
+}
+
+/* Hide scrollbars for carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
