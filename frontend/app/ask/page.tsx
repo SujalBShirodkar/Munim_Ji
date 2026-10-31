@@ -60,11 +60,22 @@ export default function AskMunimPage() {
   const [thinking, setThinking] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [micHint, setMicHint] = useState('');
+  const [voiceMode, setVoiceMode] = useState('Checking voice…');
   const endRef = useRef<HTMLDivElement>(null);
   const listenerRef = useRef<ListenerHandle | null>(null);
 
   useEffect(() => {
     warmSpeech();
+    void api.getVoiceStatus()
+      .then((s) => {
+        const bits = [
+          s.tts ? 'Cartesia voice' : 'Browser voice',
+          s.stt ? 'Deepgram mic' : 'Browser mic',
+          s.llm ? 'Groq brain' : 'Demo brain',
+        ];
+        setVoiceMode(bits.join(' · '));
+      })
+      .catch(() => setVoiceMode('Browser voice · type OK'));
     return () => {
       listenerRef.current?.stop();
       stopSpeaking();
@@ -180,9 +191,7 @@ export default function AskMunimPage() {
             </Link>
             <div>
               <p className="text-sm font-bold text-slate-900">Ask Munim Ji</p>
-              <p className="text-[11px] text-slate-400">
-                {canListen() ? 'Mic + type' : 'Type only (mic needs Chrome/Edge)'}
-              </p>
+              <p className="text-[11px] text-slate-400">{voiceMode}</p>
             </div>
           </div>
           {speaking && (
@@ -281,7 +290,7 @@ export default function AskMunimPage() {
             className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${
               listening ? 'bg-red-500 animate-pulse' : 'bg-amber-500'
             }`}
-            title={listening ? 'Stop mic' : 'Speak'}
+            title={listening ? 'Tap to send' : 'Speak (tap again to send)'}
           >
             {listening ? <MicOff size={18} /> : <Mic size={18} />}
           </button>

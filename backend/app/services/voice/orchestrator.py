@@ -72,10 +72,20 @@ async def process_voice_turn(
     except Exception as e:
         logger.warning(f"Could not log conversation turn: {e}")
 
+    spoken = str(agent_response.get("spoken_text") or "")
+    spoken = (
+        spoken.replace("₹", "rupees ")
+        .replace("???", "")
+        .replace(",", "")
+    )
+    # Collapse double spaces after replacements
+    spoken = " ".join(spoken.split())
+
     return {
-        "spoken_text": agent_response.get("spoken_text", ""),
+        "spoken_text": spoken,
         "display_text": agent_response.get("display_text", ""),
         "ui_actions": agent_response.get("ui_actions", []),
-        "latencies": latencies
+        "tools_called": agent_response.get("tools_called", []),
+        "latencies": latencies,
     }
 

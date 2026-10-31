@@ -136,41 +136,68 @@ async def run_agent_loop(
     tools_called_list = []
 
     try:
-        for _ in range(max_turns):
-            response = await groq_c.chat.completions.create(
-                model=settings.GROQ_MODEL_MAIN,
-                messages=messages,
-                tools=TOOL_DEFINITIONS,
-                tool_choice="auto",
-                temperature=0.2,
-                max_tokens=600,
-                response_format={"type": "json_object"}
-            )
+        for turn in range(max_turns):
+            create_kwargs = {
+                "model": settings.GROQ_MODEL_MAIN,
+                "messages": messages,
+                "tools": TOOL_DEFINITIONS,
+                "tool_choice": "required" if turn == 0 else "auto",
+                "temperature": 0.2,
+                "max_tokens": 800,
+            }
+            try:
+                response = await groq_c.chat.completions.create(**create_kwargs)
+            except Exception:
+                create_kwargs["tool_choice"] = "auto"
+                response = await groq_c.chat.completions.create(**create_kwargs)
+
             msg = response.choices[0].message
             messages.append(msg)
 
             if not msg.tool_calls:
-                # LLM finished reasoning and returned JSON
-                content = msg.content or "{}"
-                parsed = json.loads(content)
+                # Skipped tools entirely → keep money answers factual
+                if not tools_called_list:
+                    logger.info("LLM skipped tools; using deterministic fallback.")
+                    return await run_deterministic_fallback(user_query, merchant_id)
+
+                content = (msg.content or "").strip()
+                if content.startswith("```"):
+                    content = re.sub(r"^```(?:json)?\s*", "", content)
+                    content = re.sub(r"\s*```$", "", content)
+                try:
+                    parsed = json.loads(content or "{}")
+                except json.JSONDecodeError:
+                    parsed = {
+                        "spoken_text": content[:280],
+                        "display_text": content,
+                        "ui_actions": [],
+                    }
+                if not isinstance(parsed, dict):
+                    parsed = {
+                        "spoken_text": str(parsed),
+                        "display_text": str(parsed),
+                        "ui_actions": [],
+                    }
+                spoken = str(parsed.get("spoken_text") or parsed.get("display_text") or "")
+                spoken = spoken.replace("₹", "rupees ").replace("???", "").strip()
+                parsed["spoken_text"] = spoken
+                parsed.setdefault("display_text", spoken)
+                parsed.setdefault("ui_actions", [])
                 parsed["tools_called"] = tools_called_list
                 return parsed
 
-            # Execute each requested tool call
             for t_call in msg.tool_calls:
                 fn_name = t_call.function.name
                 fn_args = json.loads(t_call.function.arguments or "{}")
                 tools_called_list.append(fn_name)
-                
                 tool_result = await execute_tool(fn_name, fn_args, merchant_id)
                 messages.append({
                     "role": "tool",
                     "tool_call_id": t_call.id,
                     "name": fn_name,
-                    "content": json.dumps(tool_result)
+                    "content": json.dumps(tool_result, default=str),
                 })
 
-        # If loop reached max turns, fallback
         return await run_deterministic_fallback(user_query, merchant_id)
 
     except Exception as e:

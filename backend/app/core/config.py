@@ -34,15 +34,16 @@ class Settings(BaseModel):
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     JWT_EXPIRES_MINUTES: int = int(os.getenv("JWT_EXPIRES_MINUTES", "1440"))
 
-    # Groq LLM
+    # Groq LLM (model IDs vary by account — defaults match current Groq catalog)
     GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY")
-    GROQ_MODEL_MAIN: str = os.getenv("GROQ_MODEL_MAIN", "llama-3.3-70b-versatile")
-    GROQ_MODEL_FAST: str = os.getenv("GROQ_MODEL_FAST", "llama-3.1-8b-instant")
+    GROQ_MODEL_MAIN: str = os.getenv("GROQ_MODEL_MAIN", "openai/gpt-oss-120b")
+    GROQ_MODEL_FAST: str = os.getenv("GROQ_MODEL_FAST", "openai/gpt-oss-20b")
 
     # Voice (Deepgram & Cartesia)
     DEEPGRAM_API_KEY: Optional[str] = os.getenv("DEEPGRAM_API_KEY")
     CARTESIA_API_KEY: Optional[str] = os.getenv("CARTESIA_API_KEY")
     CARTESIA_VOICE_ID: str = os.getenv("CARTESIA_VOICE_ID", "a0e99841-438c-4a64-b679-ae501e7d6091")
+    CARTESIA_MODEL: str = os.getenv("CARTESIA_MODEL", "sonic-3.6")
 
     # Payments & Paytm
     # Options: 'mock' (simulated offline) or 'sandbox' (real Paytm staging)

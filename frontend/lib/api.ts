@@ -44,6 +44,7 @@ export const api = {
 
   // Assistant
   getBriefing: () => fetchApi<any>('/assistant/briefing'),
+  getVoiceStatus: () => fetchApi<any>('/assistant/voice-status'),
   sendChatMessage: (query: string, language = 'hi', history: any[] = []) =>
     fetchApi<any>('/assistant/chat', { method: 'POST', body: JSON.stringify({ query, language, history }) }),
 
