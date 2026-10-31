@@ -73,7 +73,22 @@ For millions of Indian kiranas, chai stalls, and small retailers, accepting digi
 - Node.js 18+ (or use portable `.tools/node` included)
 - MongoDB 7.0 (or run via Docker)
 
-### Option A: Standard Local Startup
+### Option A: Windows 1-Click Startup (Fastest)
+
+If you are on Windows, helper batch files are preconfigured in the project root:
+
+```cmd
+:: 1-click start MongoDB, Backend, and Frontend in separate windows
+run_all.bat
+```
+
+Or run individual services:
+- `start_mongo.bat` — Starts the bundled local MongoDB on port 27017
+- `seed_data.bat` — Seeds the database (Sharma Store, ₹8,400 yesterday sales)
+- `start_backend.bat` — Starts FastAPI server on http://localhost:8000
+- `start_frontend.bat` — Starts Next.js app on http://localhost:3000
+
+### Option B: Standard Manual Startup
 
 ```bash
 # 1. Clone repository & install backend dependencies

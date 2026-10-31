@@ -4,43 +4,43 @@
 
 @layer base {
   :root {
-    --bg-paper: #F6F8FC;
-    --card-paper: #FFFFFF;
-    --text-primary: #0B1F4B;
-    --border-ledger: #E2E8F0;
-    --margin-red: #F25C54;
-  }
-
-  .dark {
-    --bg-paper: #0B132B;
-    --card-paper: #1C2541;
-    --text-primary: #F8FAFC;
-    --border-ledger: #2D3748;
-    --margin-red: #E53E3E;
+    --bg-app: #F0F4F8;
+    --card-surface: #FFFFFF;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --paytm-navy: #002970;
+    --paytm-cyan: #00BAF2;
+    --border-light: #E8EEF4;
+    --turmeric: #D97706;
   }
 
   body {
-    background-color: var(--bg-paper);
+    background-color: var(--bg-app);
     color: var(--text-primary);
-    font-feature-settings: "tnum" on, "lnum" on;
     -webkit-font-smoothing: antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
 }
 
-/* Digital Khata signature ledger-lines */
-.khata-card {
-  position: relative;
-  background-color: var(--card-paper);
-  background-image: linear-gradient(to bottom, transparent 96%, var(--border-ledger) 96%);
-  background-size: 100% 28px;
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
-.khata-margin {
-  border-left: 2px solid rgba(242, 92, 84, 0.4);
-  padding-left: 12px;
+.paytm-card {
+  background-color: var(--card-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 41, 112, 0.04);
 }
 
-/* Hide scrollbars for carousels */
+.paytm-card-interactive {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.paytm-card-interactive:active {
+  transform: scale(0.985);
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -49,3 +49,13 @@
   scrollbar-width: none;
 }
 
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

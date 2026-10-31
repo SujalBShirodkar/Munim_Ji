@@ -30,12 +30,13 @@ async def process_voice_turn(
             "spoken_text": clarification_spoken,
             "display_text": clarification_display,
             "ui_actions": [],
-            "latencies": {"stt": stt_latency_ms, "llm": 10.0, "tts": 0.0, "total": 20.0}
+            "latencies": {"stt": stt_latency_ms, "llm": 10.0, "tts": 0.0, "total": 20.0},
+            "detected_language": "hi",
         }
 
     # Run Groq agent loop
     start_llm = time.time()
-    agent_response = await run_agent_loop(transcript, merchant_id)
+    agent_response = await run_agent_loop(transcript, merchant_id, user_lang=lang)
     llm_latency_ms = round((time.time() - start_llm) * 1000, 1)
 
     total_latency_ms = round((time.time() - start_total) * 1000 + stt_latency_ms, 1)
@@ -72,10 +73,20 @@ async def process_voice_turn(
     except Exception as e:
         logger.warning(f"Could not log conversation turn: {e}")
 
+    spoken = str(agent_response.get("spoken_text") or "")
+    spoken = (
+        spoken.replace("₹", "rupees ")
+        .replace("???", "")
+        .replace(",", "")
+    )
+    # Collapse double spaces after replacements
+    spoken = " ".join(spoken.split())
+
     return {
-        "spoken_text": agent_response.get("spoken_text", ""),
+        "spoken_text": spoken,
         "display_text": agent_response.get("display_text", ""),
         "ui_actions": agent_response.get("ui_actions", []),
-        "latencies": latencies
+        "tools_called": agent_response.get("tools_called", []),
+        "latencies": latencies,
+        "detected_language": agent_response.get("detected_language", "hi" if lang.startswith("hi") else "en"),
     }
-

@@ -22,10 +22,21 @@ async def list_transactions(
     merchant_id = user.get("sub", "merchant_sharma_001")
     cursor = db.transactions.find({"merchant_id": merchant_id}).sort("created_at", -1).limit(limit)
     txns = await cursor.to_list(length=limit)
+    clean = []
     for t in txns:
-        t["id"] = str(t.get("_id", t.get("paytm_order_id")))
-        t["amount_rupees"] = round(t["amount"] / 100, 2)
-    return txns
+        amount_paise = t.get("amount") or t.get("amount_paise") or 0
+        created = t.get("created_at")
+        clean.append({
+            "id": str(t.get("_id", t.get("paytm_order_id", ""))),
+            "paytm_order_id": t.get("paytm_order_id"),
+            "merchant_id": t.get("merchant_id"),
+            "amount": amount_paise,
+            "amount_rupees": round(float(amount_paise) / 100, 2),
+            "payment_mode": t.get("payment_mode") or t.get("mode") or "UPI QR",
+            "status": t.get("status") or "SUCCESS",
+            "created_at": created.isoformat() if hasattr(created, "isoformat") else created,
+        })
+    return clean
 
 @router.get("/analytics/summary")
 async def sales_summary(
