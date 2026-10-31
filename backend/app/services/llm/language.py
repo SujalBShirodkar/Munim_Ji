@@ -3,58 +3,46 @@ from typing import Dict, Any
 
 DEVANAGARI_REGEX = re.compile(r'[\u0900-\u097F]')
 
-# Common Hinglish words (Hindi written in Roman/Latin script)
-HINGLISH_WORDS = {
+# Unambiguous Hinglish words (Hindi written in Roman/Latin script)
+DISTINCT_HINGLISH_WORDS = {
     # Interrogatives & Pronouns
     "kya", "kyu", "kyun", "kaise", "kaisa", "kaisi", "kitna", "kitni", "kitne",
     "kaha", "kahan", "kab", "kaun", "mera", "meri", "mere", "aap", "aapka",
     "aapki", "aapke", "tum", "tumhara", "tumhari", "hum", "humara", "apna", "apni",
-    "yeh", "ye", "woh", "wo", "isko", "usko", "inhe", "unhe", "kisko",
+    "yeh", "woh", "isko", "usko", "inhe", "unhe", "kisko",
     # Verbs & Auxiliaries
-    "hai", "hain", "tha", "thi", "the", "hoga", "hogi", "hoge", "karein", "karo",
+    "hai", "hain", "tha", "thi", "hoga", "hogi", "hoge", "karein", "karo",
     "karna", "kiya", "kiye", "batao", "bataiye", "bata", "poochho", "poochhein",
-    "chahiye", "dekhna", "dekh", "bolo", "bolein", "aayega", "aayegi",
+    "chahiye", "dekhna", "bolo", "bolein", "aayega", "aayegi",
     "aaye", "gaya", "gayi", "gaye", "raha", "rahi", "rahe", "sakta", "sakti", "sakte",
     # Merchant & Commerce in Hinglish
     "dukaan", "dokan", "bikri", "kamai", "daam", "bhav", "munafa", "faida",
     "nuksan", "ghata", "bachat", "cheeni", "chai", "doodh", "chawal", "maal",
     "samaan", "udhaar", "karz", "paisa", "paise", "rupaye", "rupay", "rupya",
     "mehnga", "mehngi", "sasta", "sasti", "badha", "badhana", "badhaun", "badhaye",
-    "ghata", "ghatana", "kam", "zyada", "khata", "bahi",
+    "ghatana", "zyada", "khata", "bahi",
     # Time & Connectors
-    "aaj", "kal", "parso", "subah", "shaam", "dopahar", "raat", "din", "mahina",
-    "me", "mein", "par", "se", "ko", "ka", "ki", "ke", "bhi", "toh", "to", "mat",
-    "nahi", "nahin", "na", "theek", "shukriya", "dhanyawad", "namaste", "namaskar",
-    "bhai", "ji", "sahab", "saheb"
+    "aaj", "kal", "parso", "subah", "shaam", "dopahar", "raat", "mahina",
+    "mein", "par", "se", "bhi", "toh", "mat",
+    "nahi", "nahin", "theek", "shukriya", "dhanyawad", "namaste", "namaskar",
+    "bhai", "sahab", "saheb"
 }
 
-# Merchant & Finance keywords (English, Hindi, and Hinglish)
-MERCHANT_FINANCE_KEYWORDS = {
-    # Sales & Revenue & Cashflow
+# Dedicated merchant & finance core concepts
+CORE_FINANCE_KEYWORDS = {
     "sales", "sale", "sold", "bikri", "bika", "kamai", "revenue", "collection",
     "collections", "transaction", "transactions", "settlement", "settlements",
     "earning", "earnings", "income", "turnover", "paytm", "soundbox", "qr",
-    "yesterday", "today", "aaj", "kal", "parso", "khata", "bahi", "paisa", "paise",
-    "rupee", "rupees", "rupaye", "₹", "hisaab", "account", "peak hour", "best hour",
-    # Inventory & Supplies
-    "stock", "inventory", "maal", "samaan", "sugar", "cheeni", "tea", "chai",
-    "atta", "oil", "tel", "dal", "rice", "chawal", "doodh", "milk", "biscuit",
+    "khata", "bahi", "paisa", "paise", "rupee", "rupees", "rupaye", "₹", "hisaab",
+    "account", "stock", "inventory", "maal", "samaan", "sugar", "cheeni", "tea",
+    "chai", "atta", "oil", "tel", "dal", "rice", "chawal", "doodh", "milk",
     "packet", "bag", "bori", "reorder", "low stock", "khatam", "shortage",
-    # Pricing & Margin & What-If
     "price", "daam", "bhav", "rate", "cost", "margin", "munafa", "profit",
     "faida", "loss", "nuksan", "ghata", "mehnga", "mehngi", "sasta", "sasti",
-    "expensive", "cheap", "increase", "decrease", "badha", "badhana", "badhaun",
-    "simulator", "whatif", "what if", "discount", "change", "elasticity",
-    # Wholesale Pooled Buying
-    "pool", "pooled", "group", "group order", "wholesale", "bachat", "saving",
-    "savings", "bulk", "order", "moq", "supplier", "distributor",
-    # Credit & Lending & Repayment
-    "credit", "loan", "udhaar", "karz", "advance", "borrow", "limit", "kfs",
-    "repayment", "chukta", "auto-deduction", "interest", "byaj", "5000", "5,000",
-    "chahiye", "paise chahiye", "working capital",
-    # Store Operations & Business General
-    "dukaan", "dokan", "store", "shop", "business", "briefing", "summary",
-    "report", "opening hours", "timing", "band", "khula", "munim", "munimji"
+    "expensive", "cheap", "badha", "badhana", "badhaun", "simulator", "whatif",
+    "what if", "pool", "pooled", "wholesale", "bachat", "moq", "supplier",
+    "credit", "loan", "udhaar", "karz", "advance", "kfs", "repayment", "chukta",
+    "working capital", "dukaan", "dokan", "store", "shop"
 }
 
 GREETING_KEYWORDS = {
@@ -113,8 +101,8 @@ def detect_language_semantic(text: str) -> str:
     if not words:
         return "hinglish"
 
-    # Count Hinglish tokens
-    hinglish_count = sum(1 for w in words if w in HINGLISH_WORDS)
+    # Count distinct Hinglish tokens
+    hinglish_count = sum(1 for w in words if w in DISTINCT_HINGLISH_WORDS)
     if hinglish_count > 0:
         return "hinglish"
 
@@ -126,7 +114,6 @@ def is_greeting(text: str) -> bool:
     clean = text.lower().strip()
     words = set(re.findall(r'[\w]+', clean))
     if any(g in clean for g in GREETING_KEYWORDS):
-        # If very short or just greetings
         if len(words) <= 4:
             return True
     return False
@@ -140,8 +127,17 @@ def is_finance_or_merchant_query(text: str) -> bool:
     clean = text.lower().strip()
     words = set(re.findall(r'[\w]+', clean))
 
-    # Check against merchant & finance keywords
-    for kw in MERCHANT_FINANCE_KEYWORDS:
+    # Reject clearly non-financial sports/politics/celebrity/weather/jokes
+    non_business_phrases = [
+        "prime minister", "president", "cricket", "virat", "capital of",
+        "weather", "mausam", "binary search", "joke", "chutkula", "movie", "film",
+        "मौसम", "विराट", "क्रिकेट", "प्रधान मंत्री", "फ़िल्म", "गाना"
+    ]
+    if any(p in clean for p in non_business_phrases):
+        return False
+
+    # Check against core merchant & finance keywords
+    for kw in CORE_FINANCE_KEYWORDS:
         if " " in kw:
             if kw in clean:
                 return True
@@ -151,11 +147,11 @@ def is_finance_or_merchant_query(text: str) -> bool:
     # Check Devanagari common merchant terms
     devanagari_terms = [
         "बिक्री", "बिका", "कमाई", "रुपये", "दुकान", "चीनी", "चाय", "स्टॉक",
-        "दाम", "मुनाफ़ा", "फ़ायदा", "नुकसान", "ग्रुप", "ऑर्डर", "उधार", "कर्ज", "पेटीएम"
+        "दाम", "मुनाफ़ा", "फ़ायदा", "नुकसान", "ग्रुप", "ऑर्डर", "उधार", "कर्ज", "पेटीएम",
+        "सेटलमेंट"
     ]
     for term in devanagari_terms:
         if term in clean:
             return True
 
     return False
-

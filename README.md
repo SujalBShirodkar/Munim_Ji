@@ -109,7 +109,7 @@ npm install
 npm run dev
 ```
 
-### Option B: Docker Compose
+### Option C: Docker Compose
 
 ```bash
 docker compose up --build
@@ -179,6 +179,7 @@ Open **`http://localhost:3000`** in your browser. Demo login credentials:
 
 ## 8. Documentation Links
 
+- [Step-by-Step Cloud & VPS Deployment Guide](file:///docs/deployment-guide.md)
 - [Paytm Sandbox Testing Guide](file:///docs/paytm-testing.md)
 - [4-Minute Live Demo Script](file:///docs/demo-script.md)
 - [Decision Log & Skills Sheet](file:///skills.md)
