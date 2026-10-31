@@ -14,6 +14,7 @@ import {
   LineChart,
   Award,
   ArrowDownLeft,
+  Store,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -81,9 +82,29 @@ export default function HomePage() {
     })
     .slice(0, 8);
 
+  const shopName = briefing?.merchant?.shop_name || 'Sharma Chai & General Store';
+  const ownerName = briefing?.merchant?.name || 'Sharma ji';
+
   return (
     <AppShell>
       <div className="p-4 space-y-4">
+        {/* Dynamic Merchant Account Banner */}
+        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-xs shadow-sm">
+          <div className="flex items-center gap-2 truncate">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="font-bold text-slate-800 truncate">
+              {shopName}
+              <span className="font-normal text-slate-500 ml-1">({ownerName})</span>
+            </span>
+          </div>
+          <Link
+            href="/login"
+            className="text-[11px] font-bold text-[var(--paytm-navy)] hover:text-[var(--paytm-cyan)] shrink-0 ml-2 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs transition"
+          >
+            + Register / Switch
+          </Link>
+        </div>
+
         {/* Sales hero */}
         <section className="paytm-card p-5 space-y-4">
           <div className="flex items-start justify-between gap-3">
