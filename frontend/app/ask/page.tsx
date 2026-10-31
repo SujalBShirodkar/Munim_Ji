@@ -32,6 +32,7 @@ interface Message {
   sender: 'user' | 'munim';
   text: string;
   spokenText?: string;
+  detectedLang?: 'hi' | 'en';
   uiActions?: any[];
 }
 
@@ -52,6 +53,7 @@ export default function AskMunimPage() {
       text: 'Namaste Sharma ji! Kal ki bikri, daam badhana, ya cheeni ka order — poochhein.',
       spokenText:
         'Namaste Sharma ji! Kal ki bikri, daam badhana, ya cheeni ka order — poochhein.',
+      detectedLang: 'hi',
     },
   ]);
   const [input, setInput] = useState('');
@@ -86,10 +88,11 @@ export default function AskMunimPage() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, thinking, transcript]);
 
-  const speak = async (text: string) => {
+  const speak = async (text: string, overrideLang?: 'hi' | 'en') => {
     if (!canSpeak() || !text.trim()) return;
+    const targetLang = overrideLang || speakLang;
     await speakText(text, {
-      lang: speakLang,
+      lang: targetLang,
       onStart: () => setSpeaking(true),
       onEnd: () => setSpeaking(false),
       onError: () => setSpeaking(false),
@@ -116,6 +119,7 @@ export default function AskMunimPage() {
       const res = await api.sendChatMessage(text, lang);
       const reply = res.display_text || res.spoken_text || '…';
       const spoken = res.spoken_text || res.display_text;
+      const audioLang: 'hi' | 'en' = res.detected_language === 'en' ? 'en' : 'hi';
       setMessages((m) => [
         ...m,
         {
@@ -123,10 +127,11 @@ export default function AskMunimPage() {
           sender: 'munim',
           text: reply,
           spokenText: spoken,
+          detectedLang: audioLang,
           uiActions: res.ui_actions || [],
         },
       ]);
-      if (spoken) await speak(spoken);
+      if (spoken) await speak(spoken, audioLang);
     } catch {
       const err =
         lang === 'en'
@@ -219,7 +224,7 @@ export default function AskMunimPage() {
               >
                 {m.sender === 'munim' && m.spokenText && canSpeak() && (
                   <button
-                    onClick={() => void speak(m.spokenText!)}
+                    onClick={() => void speak(m.spokenText!, m.detectedLang)}
                     className="mb-1 text-slate-400 hover:text-[var(--turmeric)]"
                     aria-label="Replay"
                   >
@@ -290,7 +295,7 @@ export default function AskMunimPage() {
             className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${
               listening ? 'bg-red-500 animate-pulse' : 'bg-amber-500'
             }`}
-            title={listening ? 'Tap to send' : 'Speak (tap again to send)'}
+            title={listening ? 'Stop listening' : 'Speak — Munim Ji sends when you finish'}
           >
             {listening ? <MicOff size={18} /> : <Mic size={18} />}
           </button>

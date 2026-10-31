@@ -236,7 +236,7 @@ export type ListenHandlers = {
 
 export type ListenerHandle = { stop: () => void };
 
-/** Deepgram via MediaRecorder when available; else browser SpeechRecognition. */
+/** Prefer immediate browser recognition; use Deepgram recording only as a fallback. */
 export function startListening(handlers: ListenHandlers = {}): ListenerHandle {
   let stopped = false;
   let mediaRecorder: MediaRecorder | null = null;
@@ -371,14 +371,17 @@ export function startListening(handlers: ListenHandlers = {}): ListenerHandle {
     }
   };
 
-  void (async () => {
-    const status = await getVoiceStatus();
-    if (status.stt && navigator.mediaDevices?.getUserMedia) {
-      await startDeepgramRecording();
-    } else {
-      startBrowserSR();
-    }
-  })();
+  const browserRecognition =
+    typeof window !== 'undefined' &&
+    ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+
+  if (browserRecognition) {
+    // SpeechRecognition starts synchronously, so the user gets interim text
+    // without waiting for a backend status request or an audio upload.
+    startBrowserSR();
+  } else {
+    void startDeepgramRecording();
+  }
 
   return {
     stop: () => {
