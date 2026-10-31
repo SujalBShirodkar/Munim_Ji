@@ -1,13 +1,42 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { QrCode, X, CheckCircle2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { QrCode, X, CheckCircle2, LogOut } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
+import { api } from '@/lib/api';
 
 export const TopHeader: React.FC = () => {
+  const router = useRouter();
   const { lang, toggleLanguage } = useLanguage();
   const [showQr, setShowQr] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    api.getMe()
+      .then((data) => {
+        if (mounted && data) setProfile(data);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+      router.push('/login');
+    } catch (_) {
+      router.push('/login');
+    }
+  };
+
+  const shopName = profile?.shop_name || 'Sharma Chai Store';
+  const ownerName = profile?.name || profile?.owner_name || 'Andheri East';
+  const merchantId = profile?.id || 'merchant_sharma_001';
 
   return (
     <>
@@ -19,10 +48,10 @@ export const TopHeader: React.FC = () => {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h1 className="text-sm font-bold truncate">Sharma Chai Store</h1>
+                <h1 className="text-sm font-bold truncate">{shopName}</h1>
                 <CheckCircle2 size={12} className="text-[var(--paytm-cyan)] shrink-0" />
               </div>
-              <p className="text-[11px] text-blue-200/90 truncate">Andheri East · Munim Ji</p>
+              <p className="text-[11px] text-blue-200/90 truncate">{ownerName} · Munim Ji</p>
             </div>
           </div>
 
@@ -31,6 +60,7 @@ export const TopHeader: React.FC = () => {
               onClick={() => setShowQr(true)}
               className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
               aria-label="Show QR"
+              title="Show Store QR"
             >
               <QrCode size={16} className="text-[var(--paytm-cyan)]" />
             </button>
@@ -39,6 +69,14 @@ export const TopHeader: React.FC = () => {
               className="min-w-[2.25rem] px-2 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold transition"
             >
               {lang === 'hi' ? 'EN' : 'हिं'}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition"
+              aria-label="Logout"
+              title="Logout"
+            >
+              <LogOut size={15} />
             </button>
           </div>
         </div>
@@ -55,8 +93,8 @@ export const TopHeader: React.FC = () => {
             </button>
 
             <div>
-              <p className="font-bold text-slate-900">Sharma Chai Store</p>
-              <p className="text-xs text-slate-500 mt-0.5">Scan to pay</p>
+              <p className="font-bold text-slate-900">{shopName}</p>
+              <p className="text-xs text-slate-500 mt-0.5">Paytm All-In-One QR</p>
             </div>
 
             <div className="inline-flex p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -64,15 +102,15 @@ export const TopHeader: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-600">
-              UPI · <span className="font-mono text-[var(--paytm-navy)]">paytm.sharmastore@paytm</span>
+              UPI · <span className="font-mono text-[var(--paytm-navy)]">{merchantId}@paytm</span>
             </p>
 
             <Link
-              href="/pay/merchant_sharma_001"
+              href={`/pay/${merchantId}`}
               onClick={() => setShowQr(false)}
               className="block w-full py-2.5 rounded-xl bg-[var(--paytm-cyan)] hover:brightness-95 text-white font-bold text-sm transition"
             >
-              Test payment
+              Open Test Customer Payment
             </Link>
           </div>
         </div>

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+from app.db.mongo import get_database
 from app.core.deps import get_current_user_payload
 from app.core.config import settings
 from app.services.analytics.summary import get_sales_summary, get_pending_settlement
@@ -42,6 +43,10 @@ async def voice_status(user: dict = Depends(get_current_user_payload)):
 @router.get("/briefing")
 async def get_morning_briefing(user: dict = Depends(get_current_user_payload)):
     merchant_id = user.get("sub", "merchant_sharma_001")
+    db = get_database()
+    merchant = await db.merchants.find_one({"_id": merchant_id})
+    owner_name = (merchant.get("name") or merchant.get("owner_name") or "Sharma ji") if merchant else "Sharma ji"
+    shop_name = (merchant.get("shop_name") or "Sharma Chai & General Store") if merchant else "Sharma Chai & General Store"
 
     yest = await get_sales_summary(merchant_id, "yesterday")
     settlement = await get_pending_settlement(merchant_id)
@@ -51,7 +56,7 @@ async def get_morning_briefing(user: dict = Depends(get_current_user_payload)):
     credit = await mock_nbfc.get_eligibility_offer(merchant_id)
 
     spoken = (
-        f"Namaste Sharma ji! Kal Paytm par {yest['total_sales_rupees']:,.0f} rupaye ki bikri hui. "
+        f"Namaste {owner_name}! Kal Paytm par {yest['total_sales_rupees']:,.0f} rupaye ki bikri hui. "
         f"Cheeni ke group order me 9 dukaane jud chuki hain, jisme 45 rupaye per bag bachat ka mauka hai."
     )
 
@@ -66,6 +71,11 @@ async def get_morning_briefing(user: dict = Depends(get_current_user_payload)):
     return {
         "spoken_text": spoken,
         "bullets": bullets,
+        "merchant": {
+            "name": owner_name,
+            "shop_name": shop_name,
+            "id": merchant_id
+        },
         "yesterday_sales": yest,
         "pending_settlement": settlement,
         "low_stock_items": inventory["low_stock_items"],
