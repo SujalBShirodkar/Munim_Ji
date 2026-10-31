@@ -146,3 +146,13 @@ Append new entries at the bottom as the build progresses.
 ### 2026-10-31 · Frontend PWA Design Language ("Digital Khata")
 - **Decision:** Built custom CSS ledger-ruling (`.khata-card`, `.khata-margin`), turmeric Munim Ji orb, Rupee-coin progress rings, and dual-style "Bachat" ribbons (Measured vs Illustrative).
 - **Why:** Delivers a pro fintech appearance that feels distinct from mainstream apps while resonating with traditional Indian merchant bahi-khata mental models.
+
+### 2026-10-31 · App-First "Paytm for Business" Minimalist Refinement & Granular Transaction Explanations
+- **Decision:** Polished the mobile-first app platform with authentic Paytm fintech styling (Paytm Navy `#002970`, Cyan `#00BAF2`, tabular monospace numerals).
+- **Why:** Replaces generic UI with a minimalist, high-trust utility layout purpose-built for busy shopkeepers.
+- **Transaction Breakdown:** Every collection card explicitly delineates:
+  1. **Gross Received** (e.g. ₹100.00 via QR)
+  2. **Loan Recovery (20%)** (₹20.00 auto-repaid to Munim Ji Working Capital loan)
+  3. **Net to Bank** (₹80.00 settling next morning at 7:00 AM)
+- **Soundbox Telemetry:** Integrated "Soundbox 4G Active • 94% Battery" status pill and an interactive audio replay trigger simulating the iconic voice box ("Paytm par ₹100 prapt hue").
+- **Quality Gates:** All 13 Next.js routes compile cleanly in production build (`npm run build`), and all backend pytest tests pass (Paytm checksums, OR-Tools optimization, state machines, repayment math).

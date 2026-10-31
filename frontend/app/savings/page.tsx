@@ -5,16 +5,14 @@ import { AppShell } from '@/components/layout/AppShell';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/lib/language-context';
 import {
-  TrendingUp,
-  ShieldCheck,
-  CheckCircle,
-  Clock,
-  Sparkles,
   Award,
+  TrendingUp,
+  CheckCircle2,
+  Clock,
   Layers,
-  ArrowUpRight
+  ArrowLeft
 } from 'lucide-react';
-import { BachatRibbon } from '@/components/ui/BachatRibbon';
+import Link from 'next/link';
 
 export default function SavingsPage() {
   const { t } = useLanguage();
@@ -44,121 +42,128 @@ export default function SavingsPage() {
       <div className="p-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-black text-ink dark:text-white flex items-center gap-2">
-              <Award className="text-turmeric" size={22} />
-              Savings & Impact
-            </h2>
-            <p className="text-xs text-slate-500 font-medium">
-              Verified business savings from pooled wholesale buying
-            </p>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500">
+              <ArrowLeft size={18} />
+            </Link>
+            <div>
+              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Award className="text-amber-500" size={18} />
+                Verified Merchant Bachat
+              </h2>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Procurement savings audited against wholesale benchmark prices
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* 1. Total Savings Hero Card */}
-        <div className="khata-card rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-          <div className="khata-margin">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-              Cumulative Merchant Bachat
+        {/* Hero Savings Card */}
+        <div className="paytm-card p-5 bg-white dark:bg-slate-800 space-y-3">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            Net Procurement Savings
+          </span>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 num-tabular">
+              ₹{totalSavings.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-3xl font-black text-mint-dark dark:text-mint">
-                ₹{totalSavings.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            <span className="text-xs font-semibold text-slate-400">Total Saved</span>
+          </div>
+
+          {/* Measured vs Illustrative Split */}
+          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
+              <span className="text-[10px] font-black uppercase text-emerald-800 dark:text-emerald-300 block">
+                ✓ Measured Savings
               </span>
-              <span className="text-xs font-bold text-slate-400">Total Net Saved</span>
+              <span className="text-base font-black text-slate-900 dark:text-white num-tabular mt-0.5 block">
+                ₹{measuredSavings.toLocaleString('en-IN')}
+              </span>
+              <span className="text-[10px] text-slate-400">From delivered orders</span>
             </div>
 
-            {/* Split between Measured and Illustrative */}
-            <div className="grid grid-cols-2 gap-3 pt-3 mt-3 border-t border-slate-100 dark:border-slate-800">
-              <div className="p-2.5 rounded-xl bg-mint-light/60 dark:bg-mint-dark/20 border border-mint/30">
-                <span className="text-[10px] font-black uppercase text-mint-dark dark:text-mint block">
-                  ✓ Measured Savings
-                </span>
-                <span className="text-lg font-black text-ink dark:text-white mt-0.5 block">
-                  ₹{measuredSavings.toLocaleString('en-IN')}
-                </span>
-                <span className="text-[10px] text-slate-400">From delivered orders</span>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-turmeric-50 dark:bg-turmeric-950/30 border border-turmeric/30">
-                <span className="text-[10px] font-black uppercase text-turmeric-600 block">
-                  ✦ Illustrative Savings
-                </span>
-                <span className="text-lg font-black text-ink dark:text-white mt-0.5 block">
-                  ₹{illustrativeSavings.toLocaleString('en-IN')}
-                </span>
-                <span className="text-[10px] text-slate-400">From active pools</span>
-              </div>
+            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800">
+              <span className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300 block">
+                ✦ Illustrative Savings
+              </span>
+              <span className="text-base font-black text-slate-900 dark:text-white num-tabular mt-0.5 block">
+                ₹{illustrativeSavings.toLocaleString('en-IN')}
+              </span>
+              <span className="text-[10px] text-slate-400">From active pools</span>
             </div>
           </div>
         </div>
 
-        {/* 2. Impact Metrics Summary */}
+        {/* Procurement Efficiency Metrics */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="p-3 rounded-2xl bg-white dark:bg-paper-darkCard border border-slate-200 dark:border-slate-800 text-center shadow-xs">
-            <span className="text-[10px] font-bold text-slate-400 block">Pool Fill Rate</span>
-            <span className="text-base font-black text-ink dark:text-white mt-0.5 block">94.2%</span>
-            <span className="text-[9px] text-mint-dark font-semibold">Reached MOQ</span>
+          <div className="paytm-card p-3 bg-white dark:bg-slate-800 text-center">
+            <span className="text-[10px] font-bold text-slate-400 block">MOQ Fill Rate</span>
+            <span className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">94.2%</span>
+            <span className="text-[9px] text-emerald-600 font-semibold">Target Met</span>
           </div>
 
-          <div className="p-3 rounded-2xl bg-white dark:bg-paper-darkCard border border-slate-200 dark:border-slate-800 text-center shadow-xs">
-            <span className="text-[10px] font-bold text-slate-400 block">Avg Shops</span>
-            <span className="text-base font-black text-ink dark:text-white mt-0.5 block">10.5</span>
-            <span className="text-[9px] text-slate-400">Per pool order</span>
+          <div className="paytm-card p-3 bg-white dark:bg-slate-800 text-center">
+            <span className="text-[10px] font-bold text-slate-400 block">Avg Cluster</span>
+            <span className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">10.5</span>
+            <span className="text-[9px] text-slate-400">Shops / Order</span>
           </div>
 
-          <div className="p-3 rounded-2xl bg-white dark:bg-paper-darkCard border border-slate-200 dark:border-slate-800 text-center shadow-xs">
+          <div className="paytm-card p-3 bg-white dark:bg-slate-800 text-center">
             <span className="text-[10px] font-bold text-slate-400 block">Time Saved</span>
-            <span className="text-base font-black text-ink dark:text-white mt-0.5 block">14 hrs</span>
-            <span className="text-[9px] text-turmeric-600 font-semibold">Voice queries</span>
+            <span className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">14 hrs</span>
+            <span className="text-[9px] text-amber-600 font-semibold">Accounting</span>
           </div>
         </div>
 
-        {/* 3. Detailed Per-Order Breakdown */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-paper-darkCard border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
-              Order Savings Breakdown
+        {/* Audit Statement Table */}
+        <div className="paytm-card p-4 bg-white dark:bg-slate-800 space-y-3">
+          <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-700">
+            <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
+              Procurement Audit Trail
             </h3>
-            <span className="text-[10px] font-semibold text-slate-400">Audit Verified</span>
+            <span className="text-[10px] text-slate-400 font-medium">Verified by Ledger</span>
           </div>
 
           <div className="space-y-2.5">
             {/* Delivered Tea Order */}
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700 space-y-1.5 text-xs">
               <div className="flex justify-between items-start">
                 <div>
-                  <h4 className="text-xs font-black text-ink dark:text-white">
+                  <h4 className="font-bold text-slate-900 dark:text-white">
                     Wagh Bakri Premium CTC Tea (25kg)
                   </h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    Individual Baseline: ₹13,000 • Actual Group Landed: ₹11,032
+                  <p className="text-[10px] text-slate-400">
+                    Local Baseline: ₹13,000 • Landed Group Cost: ₹11,032
                   </p>
                 </div>
-                <BachatRibbon amountRupees={1968} kind="measured" />
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  ✓ Measured
+                </span>
               </div>
               <div className="flex justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/60 dark:border-slate-700">
-                <span>Status: Delivered & Settled</span>
-                <span className="font-bold text-mint-dark">Bachat: ₹78.70 / kg</span>
+                <span>Status: Delivered & Received</span>
+                <span className="font-extrabold text-emerald-600">+₹1,968 Saved</span>
               </div>
             </div>
 
-            {/* Active Sugar Order */}
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+            {/* In-Progress Sugar Order */}
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700 space-y-1.5 text-xs">
               <div className="flex justify-between items-start">
                 <div>
-                  <h4 className="text-xs font-black text-ink dark:text-white">
+                  <h4 className="font-bold text-slate-900 dark:text-white">
                     Madhur Pure Sugar (50kg Bag × 8 bags)
                   </h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    Individual Baseline: ₹17,200 • Group Tier 2: ₹16,025
+                  <p className="text-[10px] text-slate-400">
+                    Local Baseline: ₹17,200 • Landed Group Cost: ₹16,025
                   </p>
                 </div>
-                <BachatRibbon amountRupees={45} label="Save ₹45/bag" kind="illustrative" />
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                  ✦ Illustrative
+                </span>
               </div>
               <div className="flex justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/60 dark:border-slate-700">
-                <span>Status: In-Progress (72/100 bags met)</span>
-                <span className="font-bold text-turmeric-600">Pending Delivery</span>
+                <span>Status: In-Progress (72/100 bags)</span>
+                <span className="font-extrabold text-amber-600">+₹1,175 Estimated</span>
               </div>
             </div>
           </div>
@@ -167,4 +172,3 @@ export default function SavingsPage() {
     </AppShell>
   );
 }
-

@@ -5,18 +5,16 @@ import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/lib/language-context';
-import { ProgressRing } from '@/components/ui/ProgressRing';
-import { BachatRibbon } from '@/components/ui/BachatRibbon';
 import {
   ShoppingBag,
-  PlusCircle,
   MapPin,
   Clock,
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
   Users,
-  Map
+  PlusCircle,
+  Truck
 } from 'lucide-react';
 
 export default function PoolPage() {
@@ -78,23 +76,23 @@ export default function PoolPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-black text-ink dark:text-white flex items-center gap-2">
-              <ShoppingBag className="text-turmeric" size={22} />
-              Pooled Wholesale Buying
+            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <ShoppingBag className="text-[#002970] dark:text-[#00BAF2]" size={20} />
+              Wholesale Pooled Procurement
             </h2>
-            <p className="text-xs text-slate-500 font-medium">
-              Join nearby shops to unlock tier-1 volume discounts
+            <p className="text-[11px] text-slate-500 font-medium">
+              Join nearby shops within 5 km to unlock wholesale distributor tiers
             </p>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 text-xs font-bold">
+        {/* Tab Controls */}
+        <div className="flex p-1 rounded-xl bg-slate-200 dark:bg-slate-800 text-xs font-bold">
           <button
             onClick={() => setActiveTab('open')}
             className={`flex-1 py-2 rounded-lg transition ${
               activeTab === 'open'
-                ? 'bg-white dark:bg-paper-darkCard text-ink dark:text-white shadow-xs'
+                ? 'bg-white dark:bg-slate-700 text-[#002970] dark:text-white shadow-xs'
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -104,7 +102,7 @@ export default function PoolPage() {
             onClick={() => setActiveTab('my_orders')}
             className={`flex-1 py-2 rounded-lg transition ${
               activeTab === 'my_orders'
-                ? 'bg-white dark:bg-paper-darkCard text-ink dark:text-white shadow-xs'
+                ? 'bg-white dark:bg-slate-700 text-[#002970] dark:text-white shadow-xs'
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -114,15 +112,15 @@ export default function PoolPage() {
             onClick={() => setActiveTab('post_need')}
             className={`flex-1 py-2 rounded-lg transition ${
               activeTab === 'post_need'
-                ? 'bg-white dark:bg-paper-darkCard text-ink dark:text-white shadow-xs'
+                ? 'bg-white dark:bg-slate-700 text-[#002970] dark:text-white shadow-xs'
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            + Post a Need
+            + Post Need
           </button>
         </div>
 
-        {/* 1. Open Near Me Tab */}
+        {/* 1. Open Orders Near Me */}
         {activeTab === 'open' && (
           <div className="space-y-3">
             {groups.map((g) => {
@@ -130,55 +128,71 @@ export default function PoolPage() {
               return (
                 <div
                   key={g._id}
-                  className="p-4 rounded-2xl bg-white dark:bg-paper-darkCard border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
+                  className="paytm-card p-4 bg-white dark:bg-slate-800 space-y-3.5"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
-                      <MapPin size={12} className="text-paytm-cyan" />
-                      Within 2.5 km (Andheri East)
+                    <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                      <MapPin size={13} className="text-[#00BAF2]" />
+                      Andheri East Hub • 5 km radius
                     </span>
-                    <BachatRibbon amountRupees={45} label="Save ₹45/bag" kind="illustrative" />
+                    <span className="text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                      Save ₹45 / bag
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <ProgressRing progress={progressPct} radius={34} stroke={6} color="#F5A524">
-                      <span className="text-[10px] text-turmeric font-black">{progressPct}%</span>
-                    </ProgressRing>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      {g.product_name}
+                    </h4>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Wholesale Distributor: Western India Sugar Syndicate
+                    </p>
+                  </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-extrabold text-ink dark:text-white leading-tight">
-                        {g.product_name}
-                      </h4>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {g.current_qty} / {g.threshold_qty} {g.unit}s met
-                      </p>
-                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400 font-semibold">
-                        <span className="flex items-center gap-1">
-                          <Users size={12} />
-                          9 shops joined
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={12} />
-                          28h left
-                        </span>
-                      </div>
+                  {/* MOQ Progress Bar & Metric */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                        {g.current_qty} / {g.threshold_qty} {g.unit}s pooled
+                      </span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">
+                        {progressPct}% to MOQ
+                      </span>
+                    </div>
+
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-amber-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium pt-0.5">
+                      <span className="flex items-center gap-1">
+                        <Users size={12} />
+                        9 nearby shops joined
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} />
+                        28 hrs remaining
+                      </span>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-700">
                     <div>
-                      <span className="text-[10px] text-slate-400 block font-semibold">Wholesale Pool Tier:</span>
-                      <span className="text-xs font-black text-ink dark:text-white">
-                        ₹2,000 / bag (vs ₹2,150 single)
+                      <span className="text-[10px] text-slate-400 block font-semibold">Allocated Rate:</span>
+                      <span className="text-xs font-black text-slate-900 dark:text-white num-tabular">
+                        ₹2,000 / bag <span className="line-through text-slate-400 font-normal">₹2,150</span>
                       </span>
                     </div>
 
                     <Link
                       href={`/pool/${g._id}`}
-                      className="px-4 py-2 rounded-xl bg-paytm-cyan hover:bg-paytm-hover text-white text-xs font-bold shadow-sm transition flex items-center gap-1"
+                      className="px-4 py-2 rounded-xl bg-[#002970] hover:bg-[#001d52] text-white text-xs font-bold transition flex items-center gap-1 shadow-xs"
                     >
-                      <span>Join Pool</span>
-                      <ArrowRight size={14} />
+                      <span>Join & Pay Share</span>
+                      <ArrowRight size={13} />
                     </Link>
                   </div>
                 </div>
@@ -190,21 +204,24 @@ export default function PoolPage() {
         {/* 2. My Orders Tab */}
         {activeTab === 'my_orders' && (
           <div className="space-y-3">
-            <div className="p-4 rounded-2xl bg-white dark:bg-paper-darkCard border border-slate-200 dark:border-slate-800 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-black text-ink dark:text-white">
-                  Wagh Bakri Premium CTC Tea (25kg)
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-mint-light text-mint-dark">
+            <div className="paytm-card p-4 bg-white dark:bg-slate-800 space-y-2.5">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                    Wagh Bakri Premium CTC Tea (25kg)
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Order #GO-TEA-2026-001 • Paid ₹11,032 via Paytm Sandbox
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                   DELIVERED
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
-                Delivered 12 days ago • Paid ₹11,032 via Paytm
-              </p>
-              <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                <span className="text-slate-400 font-semibold">Verified Bachat:</span>
-                <span className="font-black text-mint-dark text-sm">+₹1,968 (Measured)</span>
+
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-xs flex justify-between items-center text-emerald-800 dark:text-emerald-300 font-semibold">
+                <span>Verified Net Savings (Measured):</span>
+                <span className="font-extrabold text-sm">+₹1,968.00</span>
               </div>
             </div>
           </div>
@@ -214,35 +231,36 @@ export default function PoolPage() {
         {activeTab === 'post_need' && (
           <form
             onSubmit={handlePostNeed}
-            className="p-5 rounded-2xl bg-white dark:bg-paper-darkCard border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm"
+            className="paytm-card p-5 bg-white dark:bg-slate-800 space-y-4"
           >
-            <h3 className="text-sm font-extrabold text-ink dark:text-white">
-              Tell Munim Ji What You Need
-            </h3>
-            <p className="text-xs text-slate-500">
-              Munim Ji will automatically match your need with nearby shops within 5 km to unlock wholesale volume rates.
-            </p>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                Submit Procurement Intent
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Munim Ji will automatically group your requirement with shops in a 5 km radius.
+              </p>
+            </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">
-                Select Product SKU
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Select Commodity / SKU
               </label>
               <select
                 value={needProduct}
                 onChange={(e) => setNeedProduct(e.target.value)}
-                className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-ink dark:text-white"
+                className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-white"
               >
                 <option value="Sugar (Madhur 50kg Bag)">Madhur Pure Sugar (50kg Bag)</option>
                 <option value="Wagh Bakri CTC Tea (1kg)">Wagh Bakri Premium CTC Tea (1kg)</option>
                 <option value="Fortune Sunflower Oil (15L Tin)">Fortune Refined Sunflower Oil (15L Tin)</option>
                 <option value="Aashirvaad Chakki Atta (10kg)">Aashirvaad Shudh Chakki Atta (10kg)</option>
-                <option value="Wada Kolam Rice (25kg Bag)">Wada Kolam Rice Grade A (25kg Bag)</option>
               </select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
                   Quantity Required
                 </label>
                 <input
@@ -251,18 +269,18 @@ export default function PoolPage() {
                   max="100"
                   value={needQty}
                   onChange={(e) => setNeedQty(parseInt(e.target.value) || 1)}
-                  className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-ink dark:text-white"
+                  className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">
-                  Delivery Window
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Delivery Slot
                 </label>
                 <select
                   value={needWindow}
                   onChange={(e) => setNeedWindow(e.target.value)}
-                  className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-ink dark:text-white"
+                  className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-white"
                 >
                   <option value="today">Today</option>
                   <option value="2d">Within 2 Days</option>
@@ -274,9 +292,9 @@ export default function PoolPage() {
             <button
               type="submit"
               disabled={postingNeed || needSuccess}
-              className="w-full py-3 px-4 rounded-xl bg-turmeric hover:bg-turmeric-600 text-white font-extrabold text-sm shadow-md transition disabled:opacity-50"
+              className="w-full py-3 px-4 rounded-xl bg-[#002970] hover:bg-[#001d52] text-white font-bold text-xs shadow-sm transition disabled:opacity-50"
             >
-              {needSuccess ? '✓ Need Posted & Matched!' : postingNeed ? 'Matching nearby...' : 'Post Need to Group'}
+              {needSuccess ? '✓ Need Posted and Broadcasted' : postingNeed ? 'Matching nearby...' : 'Broadcast Need to Network'}
             </button>
           </form>
         )}
@@ -284,4 +302,3 @@ export default function PoolPage() {
     </AppShell>
   );
 }
-

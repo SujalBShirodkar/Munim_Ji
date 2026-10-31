@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/lib/language-context';
-import { MunimOrb } from '@/components/ui/MunimOrb';
 import {
   Send,
   Volume2,
@@ -16,9 +15,11 @@ import {
   ShoppingBag,
   WalletCards,
   RefreshCw,
-  Clock
+  Clock,
+  Mic,
+  MicOff,
+  ArrowLeft
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
 interface Message {
@@ -26,7 +27,6 @@ interface Message {
   sender: 'user' | 'munim';
   text: string;
   spokenText?: string;
-  displaySummary?: string;
   uiActions?: any[];
   latencies?: any;
   timestamp: Date;
@@ -128,7 +128,6 @@ export default function AskMunimPage() {
     }
   };
 
-  // Browser SpeechRecognition for mic input
   const toggleListening = () => {
     if (isListening) {
       setIsListening(false);
@@ -139,7 +138,7 @@ export default function AskMunimPage() {
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please type your message.');
+      alert('Speech recognition is not supported in this browser. Please type your query below.');
       return;
     }
 
@@ -151,7 +150,7 @@ export default function AskMunimPage() {
 
     recognition.onstart = () => {
       setIsListening(true);
-      setActiveTranscript('Listening...');
+      setActiveTranscript('Listening to shopkeeper...');
     };
 
     recognition.onresult = (event: any) => {
@@ -180,8 +179,34 @@ export default function AskMunimPage() {
 
   return (
     <AppShell hideNav={false}>
-      <div className="flex flex-col h-[calc(100vh-140px)]">
-        {/* Messages Scroll Area */}
+      <div className="flex flex-col h-[calc(100vh-130px)] bg-[#F4F6F9] dark:bg-slate-900">
+        {/* Header */}
+        <div className="p-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Link href="/" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
+              <ArrowLeft size={18} />
+            </Link>
+            <div>
+              <h2 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Sparkles size={14} className="text-[#D97706]" />
+                Munim Ji Voice Assistant
+              </h2>
+              <p className="text-[10px] text-slate-400">Deterministic tools • Zero hallucinations</p>
+            </div>
+          </div>
+
+          {isSpeaking && (
+            <button
+              onClick={stopSpeaking}
+              className="text-[11px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-800 flex items-center gap-1"
+            >
+              <VolumeX size={13} />
+              <span>Mute</span>
+            </button>
+          )}
+        </div>
+
+        {/* Messages Stream */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3.5 no-scrollbar">
           {messages.map((m) => (
             <div
@@ -189,23 +214,24 @@ export default function AskMunimPage() {
               className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed shadow-sm ${
+                className={`max-w-[88%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed shadow-xs ${
                   m.sender === 'user'
-                    ? 'bg-ink text-white rounded-tr-none'
-                    : 'bg-white dark:bg-paper-darkCard border border-slate-200 dark:border-slate-800 text-ink dark:text-slate-100 rounded-tl-none'
+                    ? 'bg-[#002970] text-white rounded-tr-none'
+                    : 'bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-tl-none'
                 }`}
               >
-                {/* Header for Munim */}
+                {/* Assistant Header */}
                 {m.sender === 'munim' && (
-                  <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-turmeric-600 dark:text-turmeric-500">
+                  <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-100 dark:border-slate-700 text-[11px] font-bold text-[#D97706]">
                     <span className="flex items-center gap-1">
-                      <Sparkles size={13} />
+                      <Sparkles size={12} />
                       Munim Ji
                     </span>
                     {m.spokenText && (
                       <button
                         onClick={() => speakText(m.spokenText!)}
-                        className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600"
+                        className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400"
+                        title="Replay Voice"
                       >
                         <Volume2 size={13} />
                       </button>
@@ -213,22 +239,22 @@ export default function AskMunimPage() {
                   </div>
                 )}
 
-                <p className="whitespace-pre-line">{m.text}</p>
+                <p className="whitespace-pre-line text-xs sm:text-[13px] leading-relaxed">{m.text}</p>
 
                 {/* Inline Action Card Button if tool suggested UI transition */}
                 {m.uiActions && m.uiActions.length > 0 && (
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700 flex flex-wrap gap-2">
                     {m.uiActions.map((action, i) => {
                       if (action.target === 'simulator') {
                         return (
                           <Link
                             key={i}
                             href="/whatif"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-paytm-cyan text-white text-xs font-bold shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#002970] text-white text-xs font-bold shadow-xs hover:bg-[#001d52]"
                           >
-                            <LineChart size={14} />
-                            <span>Open What-If Simulator</span>
-                            <ArrowRight size={13} />
+                            <LineChart size={13} />
+                            <span>Open Price Simulator</span>
+                            <ArrowRight size={12} />
                           </Link>
                         );
                       }
@@ -237,11 +263,11 @@ export default function AskMunimPage() {
                           <Link
                             key={i}
                             href="/pool"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-turmeric text-white text-xs font-bold shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold shadow-xs hover:bg-amber-700"
                           >
-                            <ShoppingBag size={14} />
+                            <ShoppingBag size={13} />
                             <span>View Sugar Pool Order</span>
-                            <ArrowRight size={13} />
+                            <ArrowRight size={12} />
                           </Link>
                         );
                       }
@@ -250,11 +276,11 @@ export default function AskMunimPage() {
                           <Link
                             key={i}
                             href="/credit"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-mint-dark text-white text-xs font-bold shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-xs hover:bg-emerald-700"
                           >
-                            <WalletCards size={14} />
+                            <WalletCards size={13} />
                             <span>Review ₹5,000 Credit Offer</span>
-                            <ArrowRight size={13} />
+                            <ArrowRight size={12} />
                           </Link>
                         );
                       }
@@ -266,24 +292,24 @@ export default function AskMunimPage() {
                 {/* Latency info badge */}
                 {m.latencies && (
                   <div className="mt-2 pt-1 text-[9px] text-slate-400 flex items-center justify-between font-mono">
-                    <span>LLM: {m.latencies.llm}ms</span>
-                    <span>Total: {m.latencies.total}ms</span>
+                    <span>Tool latency: {m.latencies.llm}ms</span>
+                    <span>Total response: {m.latencies.total}ms</span>
                   </div>
                 )}
               </div>
             </div>
           ))}
 
-          {/* Live transcript or thinking indicator */}
+          {/* Thinking State */}
           {isThinking && (
-            <div className="flex items-center gap-2 p-3 rounded-2xl bg-white dark:bg-paper-darkCard border border-turmeric/30 text-xs text-slate-500 w-fit">
-              <RefreshCw size={14} className="animate-spin text-turmeric" />
-              <span>{t.thinking}</span>
+            <div className="flex items-center gap-2 p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 w-fit shadow-xs">
+              <RefreshCw size={14} className="animate-spin text-[#002970] dark:text-[#00BAF2]" />
+              <span>Munim Ji calculating database numbers...</span>
             </div>
           )}
 
           {activeTranscript && (
-            <div className="p-2.5 rounded-xl bg-turmeric-50 dark:bg-turmeric-950/40 border border-turmeric/40 text-xs text-turmeric-600 italic">
+            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 text-xs text-amber-900 dark:text-amber-200 italic font-medium">
               "{activeTranscript}"
             </div>
           )}
@@ -292,20 +318,20 @@ export default function AskMunimPage() {
         </div>
 
         {/* Suggestion Chips */}
-        <div className="px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className="px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar bg-slate-100 dark:bg-slate-800/50">
           {suggestionChips.map((chip, idx) => (
             <button
               key={idx}
               onClick={() => handleSendMessage(chip)}
-              className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-paper-darkCard border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-paytm-cyan whitespace-nowrap shadow-xs transition"
+              className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-[#00BAF2] whitespace-nowrap shadow-2xs transition"
             >
               {chip}
             </button>
           ))}
         </div>
 
-        {/* Bottom Input & Voice Controls */}
-        <div className="p-3 bg-white dark:bg-paper-dark border-t border-slate-200 dark:border-slate-800">
+        {/* Bottom Input & Mic */}
+        <div className="p-3 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -313,28 +339,32 @@ export default function AskMunimPage() {
             }}
             className="flex items-center gap-2"
           >
-            {/* Center Orb for Voice Tap */}
-            <div className="shrink-0">
-              <MunimOrb
-                size="sm"
-                isListening={isListening}
-                isSpeaking={isSpeaking}
-                onClick={toggleListening}
-              />
-            </div>
+            {/* Mic Button */}
+            <button
+              type="button"
+              onClick={toggleListening}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition shadow-xs ${
+                isListening
+                  ? 'bg-red-500 text-white animate-pulse'
+                  : 'bg-amber-500 hover:bg-amber-600 text-white'
+              }`}
+              title={isListening ? 'Stop listening' : 'Start voice query'}
+            >
+              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
 
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={isListening ? t.listening : 'Poochhein ya type karein...'}
-              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-ink dark:text-white focus:outline-none focus:border-paytm-cyan transition"
+              placeholder={isListening ? 'Listening...' : 'Poochhein ya type karein (e.g. Kal ki bikri)...'}
+              className="flex-1 py-2.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#002970]"
             />
 
             <button
               type="submit"
               disabled={!inputText.trim() || isThinking}
-              className="w-10 h-10 rounded-xl bg-paytm-cyan text-white flex items-center justify-center disabled:opacity-40 shadow-sm"
+              className="w-10 h-10 rounded-xl bg-[#002970] text-white flex items-center justify-center disabled:opacity-40 shadow-xs hover:bg-[#001d52]"
             >
               <Send size={16} />
             </button>
@@ -344,4 +374,3 @@ export default function AskMunimPage() {
     </AppShell>
   );
 }
-
